@@ -75,6 +75,10 @@ void setup(void) {
   }
   //finding a name for a new file
   checkAndCreateNewFile();
+  for(int i = 0; i < 10; i++){
+    digitalWrite(PIN_DATA_SAVING_LED, !digitalRead(PIN_DATA_SAVING_LED));
+    delay(200);
+  }
 }
 
 //returns the temperature from each DS18B20 sensor
@@ -86,6 +90,7 @@ float getTemperature(DeviceAddress deviceAddress) {
     return -1;
   }
   return tempC;
+  //just to indicate that we went sucessfully through setup and we are ready to start the program
 }
 
 void checkAndCreateNewFile() {
