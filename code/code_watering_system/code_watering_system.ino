@@ -17,11 +17,13 @@ Libraries you will need to Arduino IDE, in () version that I used in my project:
 //we don't need to read the temperature really fast so we can use the highest precision
 #define TEMPERATURE_PRECISION 12
 #define NUMBER_OF_READINGS_TO_AVERAGE 20
-#define LOW_MOISTURE_LEVEL_1 800
-#define LOW_MOISTURE_LEVEL_2 800
-#define WATERING_TIME_SECONDS_1 120
-#define WATERING_TIME_SECONDS_2 120
+#define LOW_MOISTURE_LEVEL_1 700
+#define LOW_MOISTURE_LEVEL_2 700
+#define WATERING_TIME_SECONDS_1 300
+#define WATERING_TIME_SECONDS_2 60
 #define DATA_READINGS_WHILE_WATERING 50
+#define MAX_NO_WATERING_TIME 86400000 //miliseconds = 24 hours
+#define MIN_NO_WATERING_TIME 43200000 //miliseconds = 12 hours
 
 #define PIN_TEMPERATURE_SENSOR 2
 #define PIN_SD_CS 10
@@ -41,6 +43,8 @@ Libraries you will need to Arduino IDE, in () version that I used in my project:
 String sd_file_name = "";
 int watering_counter_1 = 0;
 int watering_counter_2 = 0;
+long int last_watering_1 = 0;
+long int last_watering_2 = 0;
 
 
 OneWire oneWire(PIN_TEMPERATURE_SENSOR);
@@ -78,6 +82,14 @@ void setup(void) {
   for(int i = 0; i < 10; i++){
     digitalWrite(PIN_DATA_SAVING_LED, !digitalRead(PIN_DATA_SAVING_LED));
     delay(200);
+  }
+  Serial.println("Program by Nikodem Bartnik V0.6");
+  if(getWaterLevel(1) == 0){
+  Serial.println("Pump test...");
+  switchPump(1,1);
+  delay(5000);
+  switchPump(1,0);
+  Serial.println("Test finished...");
   }
 }
 
@@ -121,7 +133,7 @@ void saveGeneralDataToSD(long int mil, float t_g1, float t_g2, float t_air, int 
   }
 }
 
-void saveWateringDataToSD(int pump, long int mil, float t_g1, float t_g2, float t_air, int m_g1, int m_g2, int w_l1, int w_l2, float bat_voltage, float pv_voltage, int sun, int rain) {
+void saveWateringDataToSD(int watering_counter, int pump, long int mil, float t_g1, float t_g2, float t_air, int m_g1, int m_g2, int w_l1, int w_l2, float bat_voltage, float pv_voltage, int sun, int rain) {
   digitalWrite(PIN_DATA_SAVING_LED, HIGH);
   File datafile;
   if (pump == 1) {
@@ -129,23 +141,11 @@ void saveWateringDataToSD(int pump, long int mil, float t_g1, float t_g2, float 
   } else {
     datafile = SD.open("p2.txt", FILE_WRITE);
   }
-  String data = String(mil) + ", " + String(t_g1) + ", " + String(t_g2) + ", " + String(t_air) + ", " + String(m_g1) + ", " + String(m_g2) + ", " + String(w_l1) + ", " + String(w_l2) + ", " + String(bat_voltage) + ", " + String(pv_voltage) + ", " + String(sun) + ", " + String(rain);
+  String data = String(watering_counter) + ", " + String(mil) + ", " + String(t_g1) + ", " + String(t_g2) + ", " + String(t_air) + ", " + String(m_g1) + ", " + String(m_g2) + ", " + String(w_l1) + ", " + String(w_l2) + ", " + String(bat_voltage) + ", " + String(pv_voltage) + ", " + String(sun) + ", " + String(rain);
   datafile.println(data);
   datafile.close();
   digitalWrite(PIN_DATA_SAVING_LED, LOW);
 }
-
-// JUST FOR TESTING
-// void saveDataToSD(){
-//   File datafile = SD.open(sd_file_name, FILE_WRITE);
-//   if(datafile){
-//   datafile.println("test");
-//   Serial.println("Saving to file");
-//   datafile.close();
-//   }else{
-//     Serial.println("Error while opening the file");
-//   }
-// }
 
 int getMoistureSensorData(int sensor) {
   if (sensor == 1) {
@@ -198,6 +198,14 @@ void errorAndHold() {
   }
 }
 
+void pumpSafetyLevelCheck(){
+  if(getWaterLevel(1) == 1){
+      digitalWrite(PIN_PUMP_1, HIGH);
+    }
+  if(getWaterLevel(2) == 1){
+      digitalWrite(PIN_PUMP_2, HIGH);
+    }
+}
 
 void loop(void) {
 
@@ -213,8 +221,14 @@ void loop(void) {
   int ground_moisture_1 = ground_moisture_1_total / NUMBER_OF_READINGS_TO_AVERAGE;
   int ground_moisture_2 = ground_moisture_2_total / NUMBER_OF_READINGS_TO_AVERAGE;
 
-  if (ground_moisture_1 < LOW_MOISTURE_LEVEL_1) {
+  if ((ground_moisture_1 < LOW_MOISTURE_LEVEL_1) || ((millis() - last_watering_1) > MAX_NO_WATERING_TIME)) {
+    if((millis() - last_watering_1) > MIN_NO_WATERING_TIME){
+      Serial.print("Max watering time p1: ");
+      Serial.println(((millis() - last_watering_1) > MAX_NO_WATERING_TIME));
+      Serial.print("Min watering time p1: ");
+      Serial.println((millis() - last_watering_1) > MIN_NO_WATERING_TIME);
     if (ground_moisture_1 > 200) {
+      last_watering_1 = millis();
       //checking if there is water inside the tank
       //there is a pullup, pin is shorted to GND if there is water
       if (getWaterLevel(1) == 0) {
@@ -222,7 +236,8 @@ void loop(void) {
         switchPump(1, 1);
         long int end_time = (WATERING_TIME_SECONDS_1 * 1000L) + millis();
         while (millis() < end_time) {
-          saveWateringDataToSD(1, millis(), getTemperature(temp_ground1), getTemperature(temp_ground2), getTemperature(temp_air), ground_moisture_1, ground_moisture_2, getWaterLevel(1), getWaterLevel(2), getVoltage(1), getVoltage(2), getSunData(), getRainData());
+          saveWateringDataToSD(watering_counter_1, 1, millis(), getTemperature(temp_ground1), getTemperature(temp_ground2), getTemperature(temp_air), ground_moisture_1, ground_moisture_2, getWaterLevel(1), getWaterLevel(2), getVoltage(1), getVoltage(2), getSunData(), getRainData());
+          pumpSafetyLevelCheck();
           delay((WATERING_TIME_SECONDS_1 * 1000.0) / DATA_READINGS_WHILE_WATERING);
         }
         switchPump(1, 0);
@@ -232,10 +247,17 @@ void loop(void) {
     } else {
       Serial.println("Error, Moisture 1 level < 200");
     }
+    }
   }
 
-  if (ground_moisture_2 < LOW_MOISTURE_LEVEL_2) {
+  if ((ground_moisture_2 < LOW_MOISTURE_LEVEL_2) || ((millis() - last_watering_2) > MAX_NO_WATERING_TIME)) {
+    if((millis() - last_watering_2) > MIN_NO_WATERING_TIME){
+      Serial.print("Max watering time p2: ");
+      Serial.println(((millis() - last_watering_2) > MAX_NO_WATERING_TIME));
+      Serial.print("Min watering time p2: ");
+      Serial.println((millis() - last_watering_2) > MIN_NO_WATERING_TIME);
     if (ground_moisture_2 > 200) {
+      last_watering_2 = millis();
       //checking if there is water inside the tank
       //there is a pullup, pin is shorted to GND if there is water
       if (getWaterLevel(2) == 0) {
@@ -243,7 +265,8 @@ void loop(void) {
         switchPump(2, 1);
         long int end_time = (WATERING_TIME_SECONDS_1 * 1000L) + millis();
         while (millis() < end_time) {
-          saveWateringDataToSD(2, millis(), getTemperature(temp_ground1), getTemperature(temp_ground2), getTemperature(temp_air), ground_moisture_1, ground_moisture_2, getWaterLevel(1), getWaterLevel(2), getVoltage(1), getVoltage(2), getSunData(), getRainData());
+          saveWateringDataToSD(watering_counter_2, 2, millis(), getTemperature(temp_ground1), getTemperature(temp_ground2), getTemperature(temp_air), ground_moisture_1, ground_moisture_2, getWaterLevel(1), getWaterLevel(2), getVoltage(1), getVoltage(2), getSunData(), getRainData());
+          pumpSafetyLevelCheck();
           delay((WATERING_TIME_SECONDS_2 * 1000.0) / DATA_READINGS_WHILE_WATERING);
         }
         switchPump(2, 0);
@@ -252,6 +275,7 @@ void loop(void) {
       }
     } else {
       Serial.println("Error, Moisture 2 level < 200");
+    }
     }
   }
   Serial.println("Saving general data to SD");
