@@ -23,6 +23,7 @@ selectionActive = True
 dailyWateringCycles = 3 
 wateringCycleTime = 1 #choose from WATERING_CYCLE_TIMES
 selectionTimer = Timer()
+lastWatering = time.time()
 
 pump1 = Pin(PIN_PUMP_1, Pin.OUT)
 pump2 = Pin(PIN_PUMP_2, Pin.OUT)
@@ -58,6 +59,7 @@ def disableSelection(t):
     ledG3.value(0)
     ledG4.value(0)
     saveSettings()
+    selectionTimer.init(mode=Timer.PERIODIC, freq=0.1, callback=signOfLife)
     
     
 def saveSettings():
@@ -131,8 +133,25 @@ def checkAndModifySettings():
             
 
 def checkWatering():
-    #watering
-    pass
+    global lastWatering
+    #if((time.time() - lastWatering) > (86400/dailyWateringCycles)):
+    if((time.time() - lastWatering) > (1200/(dailyWateringCycles + 1))):
+        wateringStart = time.time()
+        pump1.value(1)
+        while(time.time() - wateringStart < (WATERING_CYCLE_TIMES_ARRAY[wateringCycleTime]*60)):
+            ledG1.value(1)
+            time.sleep_ms(200)
+            ledG1.value(0)
+            time.sleep_ms(200)
+        pump1.value(0)
+        lastWatering = time.time()
+        
+        
+def signOfLife(t):
+    ledR1.value(1)
+    time.sleep_ms(10)
+    ledR1.value(0)
+    print('sign of life')
     
 
 #loading the settings from flash before entering the loop
@@ -148,4 +167,4 @@ while(1):
         displayWateringTimes()
         displayWateringCycles()
     time.sleep_ms(50)
-    print(selectionActive)
+    print(time.time())
