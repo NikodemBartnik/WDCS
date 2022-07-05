@@ -16,6 +16,9 @@ PIN_LED_G_4 = 21
 PIN_BUTTON_1 = 6
 PIN_BUTTON_2 = 17
 
+PIN_WATER_LEVEL_SENSOR_1 = 0
+PIN_WATER_LEVEL_SENSOR_2 = 1
+
 WATERING_CYCLE_TIMES_ARRAY = [2, 4, 6, 8] #time in minutes
 
 #global variables
@@ -39,6 +42,8 @@ ledG4 = Pin(PIN_LED_G_4, Pin.OUT)
 
 button1 = Pin(PIN_BUTTON_1, Pin.IN, Pin.PULL_DOWN)
 button2 = Pin(PIN_BUTTON_2, Pin.IN, Pin.PULL_DOWN)
+wl1 = Pin(PIN_WATER_LEVEL_SENSOR_1, Pin.IN, Pin.PULL_UP)
+wl2 = Pin(PIN_WATER_LEVEL_SENSOR_2, Pin.IN, Pin.PULL_UP)
 
 
 def checkKeys():
@@ -134,16 +139,16 @@ def checkAndModifySettings():
 
 def checkWatering():
     global lastWatering
-    #if((time.time() - lastWatering) > (86400/dailyWateringCycles)):
-    if((time.time() - lastWatering) > (1200/(dailyWateringCycles + 1))):
+    if((time.time() - lastWatering) > (86400/(dailyWateringCycles + 1))):
         wateringStart = time.time()
+        if(checkWaterLevel()):
         pump1.value(1)
-        while(time.time() - wateringStart < (WATERING_CYCLE_TIMES_ARRAY[wateringCycleTime]*60)):
-            ledG1.value(1)
-            time.sleep_ms(200)
-            ledG1.value(0)
-            time.sleep_ms(200)
-        pump1.value(0)
+            while(time.time() - wateringStart < (WATERING_CYCLE_TIMES_ARRAY[wateringCycleTime]*60)):
+                ledG1.value(1)
+                time.sleep_ms(200)
+                ledG1.value(0)
+                time.sleep_ms(200)
+            pump1.value(0)
         lastWatering = time.time()
         
         
@@ -152,6 +157,9 @@ def signOfLife(t):
     time.sleep_ms(10)
     ledR1.value(0)
     print('sign of life')
+    
+def checkWaterLevel():
+    return 0 if wl1.value() else 1
     
 
 #loading the settings from flash before entering the loop
@@ -167,4 +175,3 @@ while(1):
         displayWateringTimes()
         displayWateringCycles()
     time.sleep_ms(50)
-    print(time.time())
