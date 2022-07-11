@@ -142,7 +142,7 @@ def checkWatering():
     if((time.time() - lastWatering) > (86400/(dailyWateringCycles + 1))):
         wateringStart = time.time()
         if(checkWaterLevel()):
-        pump1.value(1)
+            pump1.value(1)
             while(time.time() - wateringStart < (WATERING_CYCLE_TIMES_ARRAY[wateringCycleTime]*60)):
                 ledG1.value(1)
                 time.sleep_ms(200)
@@ -160,7 +160,15 @@ def signOfLife(t):
     
 def checkWaterLevel():
     return 0 if wl1.value() else 1
-    
+
+
+def checkWaterAndAlarm():
+    if(checkWaterLevel() == 0):
+        ledR4.value(1)
+        time.sleep_ms(500)
+        ledR4.value(0)
+        time.sleep_ms(500)
+        
 
 #loading the settings from flash before entering the loop
 loadSettings()
@@ -174,4 +182,7 @@ while(1):
         checkAndModifySettings()
         displayWateringTimes()
         displayWateringCycles()
+    else:
+        checkWaterAndAlarm()
+        
     time.sleep_ms(50)
