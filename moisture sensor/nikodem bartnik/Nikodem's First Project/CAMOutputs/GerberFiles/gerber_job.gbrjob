@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2022-04-23T19:51:38Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.7.0"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "moisture sensor pcb"
+        },
+        "Owner": "Nikodem Bartnik <nikodem.bartnik@gmail.com>",
+        "Size": {
+            "X": 34.38935,
+            "Y": 19
+        }
+    }
+}

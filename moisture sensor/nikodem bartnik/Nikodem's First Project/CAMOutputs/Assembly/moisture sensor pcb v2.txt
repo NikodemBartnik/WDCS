@@ -1,0 +1,9 @@
+Partlist exported from Team Hub: nikodem bartnik   Project: Nikodem's First Project  Board: moisture sensor pcb v2 at 2022-04-23 21:51
+
+Qty Value        Device                Package             Parts  Description    CATEGORY  COLOR DESCRIPTION   MANUFACTURER MPN OPERATING_TEMP PART_STATUS PROD_ID   ROHS_COMPLIANT SERIES SUB-CATEGORY THERMALLOSS TYPE     VALUE    
+1   1.2M         1.2MOHM-0603-1/10W-1% 0603                R1     1.2MΩ resistor                                                                           RES-10055                                                         1.2M     
+1   10k          10KOHM-0603-1/10W-1%  0603                R2     10kΩ resistor                                                                            RES-00824                                                         10k      
+1   300          300OHM-0603-1/10W-1%  0603                R3     300Ω resistor                                                                            RES_10328                                                         300      
+1   LED_GREEN    CHIP-FLAT-G_1206      LEDC3216X75N_FLAT-G D1                    LED       GREEN CHIP LED FLAT                                                                             CHIP                     FLAT_TOP LED_GREEN
+2   PINHD-1X1    PINHD-1X1             1X01                P1, P2 PIN HEADER     CONNECTOR                                                                                                 PIN-HEADER                                 
+1   PINHD-1X3/90 PINHD-1X3/90          1X03/90             CON    PIN HEADER     CONNECTOR                                                                                                 PIN-HEADER                                 
